@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" creationComplete="init()">
+
+	<s:layout>
+		<s:VerticalLayout paddingBottom="20" paddingLeft="20" paddingRight="20" paddingTop="20"/>
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+		import com.flexologist.util.HostsFileUtil;
+		import com.flexologist.util.OperatingSystemUtil;
+
+		private function init():void
+		{
+			var platform:String = OperatingSystemUtil.osType;
+			setLocation(guessHostsLocation(platform));
+		}
+
+		private function setLocation(location:String):void
+		{
+			hostsLocation.text = location;
+		}
+
+		private function guessHostsLocation(platform:String):String
+		{
+			var location:File;
+
+			switch(platform)
+			{
+				case OperatingSystemUtil.LINUX:
+				case OperatingSystemUtil.MAC:
+					location = testPaths(["/etc/hosts"]);
+					break;
+				case OperatingSystemUtil.WINDOWS:
+					location = testPaths(["c:/windows/system32/drivers/etc/hosts",
+											"c:/winnt/system32/drivers/etc/hosts",
+											"c:/windows/hosts"]);
+					break;
+			}
+
+			return location ? location.nativePath : null;
+		}
+
+		private function testPaths(paths:Array):File
+		{
+			var file:File;
+
+			for each(var path:String in paths)
+			{
+				file = new File(path);
+				return file.exists ? file : null;
+			}
+
+			return null;
+		}
+
+		private function browseForLocation():void
+		{
+			var location:File = new File();
+			location.addEventListener(Event.SELECT, locationSelectionHandler);
+
+			location.browseForOpen("Browse for the hosts file");
+		}
+
+		private function locationSelectionHandler(event:Event):void
+		{
+			var location:File = event.currentTarget as File;
+			if(location && location.exists)
+				setLocation(location.nativePath);
+		}
+		]]>
+	</fx:Script>
+
+	<s:Label text="AIR Hostess" fontSize="20" fontFamily="Tahoma"/>
+
+	<mx:Form>
+		<mx:FormItem label="Hosts file location:">
+			<s:HGroup verticalAlign="middle">
+				<mx:TextInput id="hostsLocation" width="100%"/>
+				<s:Button label="Browse" click="browseForLocation()"/>
+			</s:HGroup>
+		</mx:FormItem>
+		<s:Button label="Get" click="HostsFileUtil.getHostAddresses(new File(hostsLocation.text))"/>
+	</mx:Form>
+
+</s:WindowedApplication>
